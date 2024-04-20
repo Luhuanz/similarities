@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author:XuMing(xuming624@qq.com)
-@description: pip install gradio
+@description: pip install gradio 1
 """
 import gradio as gr
 from similarities import BertSimilarity

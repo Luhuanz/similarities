@@ -7,7 +7,7 @@ Compute similarity:
 1. Compute the similarity between two sentences
 2. Retrieves most similar sentence of a query against a corpus of documents.
 """
-
+#计算两个句子之间的相似度或检索一个查询与一组文档的最相似句子
 import json
 import os
 from typing import List, Union, Dict
@@ -23,7 +23,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TOKENIZERS_PARALLELISM"] = "TRUE"
 
 
-class BertSimilarity(SimilarityABC):
+class BertSimilarity(SimilarityABC): #用于计算句子的相似度，在给定文档集合（corpus）中检索与查询句子最相似的句子。
     """
     Sentence Similarity:
     1. Compute the similarity between two sentences
@@ -34,7 +34,7 @@ class BertSimilarity(SimilarityABC):
 
     def __init__(
             self,
-            corpus: Union[List[str], Dict[int, str]] = None,
+            corpus: Union[List[str], Dict[int, str]] = None, # 表示 corpus 可以是字符串列表 (List[str]) 或整数到字符串的字典 (Dict[int, str])
             model_name_or_path: str = "shibing624/text2vec-base-chinese",
             device: str = None,
     ):
@@ -42,18 +42,18 @@ class BertSimilarity(SimilarityABC):
         Initialize the similarity object.
         :param model_name_or_path: Transformer model name or path or SentenceTransformer() or SentenceModel(), like:
             'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', 'bert-base-uncased', 'bert-base-chinese',
-             'shibing624/text2vec-base-chinese', ...
+             'shibing624/text2vec-base-chinese', ... #指定的模型将被用来将文本转换为嵌入向量，这些嵌入向量之后会用于相似度计算
             model in HuggingFace Model Hub and release from https://github.com/shibing624/text2vec
         :param corpus: Corpus of documents to use for similarity queries.
         :param device: Device (like 'cuda' / 'cpu') to use for the computation.
         """
         if isinstance(model_name_or_path, str):
-            self.sentence_model = SentenceModel(
+            self.sentence_model = SentenceModel(   #SentenceModel 对象，用于将文本转换为嵌入向量
                 model_name_or_path,
                 device=device
             )
-        elif hasattr(model_name_or_path, "encode"):
-            self.sentence_model = model_name_or_path
+        elif hasattr(model_name_or_path, "encode"):  #'shibing624/text2vec-base-chinese'
+            self.sentence_model = model_name_or_path # 这个对象具有 encode 方法，这意味着它可能已经是一个预先配置好的模型对象。
         else:
             raise ValueError("model_name_or_path is transformers model name or path")
         self.score_functions = {'cos_sim': cos_sim, 'dot': dot_score}
@@ -82,9 +82,10 @@ class BertSimilarity(SimilarityABC):
             The dimension of the sentence embeddings, or None if it cannot be determined.
         """
         if hasattr(self.sentence_model, "get_sentence_embedding_dimension"):
-            return self.sentence_model.get_sentence_embedding_dimension()
+            return self.sentence_model.get_sentence_embedding_dimension()  #调用该方法并返回其结果，这应该是句子嵌入的维度。
         else:
             return getattr(self.sentence_model.bert.pooler.dense, "out_features", None)
+        #getattr 函数获取对象 self.sentence_model.bert.pooler.dense 的属性值。
 
     def add_corpus(self, corpus: Union[List[str], Dict[int, str]], batch_size: int = 32,
                    normalize_embeddings: bool = True):
@@ -96,7 +97,7 @@ class BertSimilarity(SimilarityABC):
         :return: corpus, corpus embeddings
         """
         new_corpus = {}
-        start_id = len(self.corpus) if self.corpus else 0
+        start_id = len(self.corpus) if self.corpus else 0  #计算新文档的起始 ID。如果语料库已经存在，则起始 ID 将是现有语料库的长度，否则为 0
         for id, doc in enumerate(corpus):
             if isinstance(corpus, list):
                 if doc not in self.corpus.values():
@@ -104,7 +105,7 @@ class BertSimilarity(SimilarityABC):
             else:
                 if doc not in self.corpus.values():
                     new_corpus[id] = doc
-        self.corpus.update(new_corpus)
+        self.corpus.update(new_corpus) #将新的文档添加到原语料库中
         logger.info(f"Start computing corpus embeddings, new docs: {len(new_corpus)}")
         corpus_embeddings = self.get_embeddings(
             list(new_corpus.values()),

@@ -2,6 +2,7 @@
 """
 @author:XuMing(xuming624@qq.com)
 @description: Fast similarity search demo
+@2024-03-31-21.16
 """
 
 import os

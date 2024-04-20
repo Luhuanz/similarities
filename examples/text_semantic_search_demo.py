@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author:XuMing(xuming624@qq.com)
-@description: 文本语义相似度计算和文本匹配搜索
+@description: 文本语义相似度计算和文本匹配搜索1
 """
 import sys
 

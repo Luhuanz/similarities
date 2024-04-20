@@ -3,6 +3,7 @@
 @author:XuMing(xuming624@qq.com)
 @description: Find duplicate sentences in a corpus
 """
+#文娱文
 import sys
 
 sys.path.append('..')

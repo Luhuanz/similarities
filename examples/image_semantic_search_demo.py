@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author:XuMing(xuming624@qq.com)
-@description: 
+@description:  类似clip 图与文
 """
 import glob
 import sys
@@ -60,10 +60,10 @@ if __name__ == "__main__":
     imgs2 = [Image.open(i) for i in image_fps2]
     corpus_fps = glob.glob('data/*.jpg') + glob.glob('data/*.png')
     corpus_imgs = [Image.open(i) for i in corpus_fps]
-    # 1. image and text similarity
+    # 1. image and text similarity  图文
     clip_demo()
 
-    # 2. image and image similarity score
+    # 2. image and image similarity score 图图
     sim_and_search(ClipSimilarity())  # the best result
     sim_and_search(ImageHashSimilarity(hash_function='phash'))
     sim_and_search(SiftSimilarity())

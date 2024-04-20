@@ -4,7 +4,7 @@
 @description: Download file.
 """
 
-import shutil
+import shutil #常用于复制和删除文件或目录。例如，shutil.copy(source, destination) 用于复制文件，shutil.rmtree(path) 用于删除目录及其所有内容。
 import tarfile
 import zipfile
 import six

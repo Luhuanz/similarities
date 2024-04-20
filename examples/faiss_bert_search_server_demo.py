@@ -62,7 +62,7 @@ def main():
         device=None,
         port=8001,
     )
-
+#自动生成的命令行界面
 
 if __name__ == '__main__':
     main()

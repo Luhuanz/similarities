@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Image hashing library
+Image hashing library1
 ======================
 Example:
 >>> from PIL import Image

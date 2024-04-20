@@ -17,8 +17,8 @@ from similarities import (
 
 
 def sim_and_search(m):
-    print(m)
-    if 'BM25' not in str(m):
+    print(m) #打印模型 m 的信息，然后检查模型是否不包含字符串 "BM25"。如果模型名中不含 "BM25"，则进行相似度计算。
+    if 'BM25' not in str(m): #BM25只进行 text1 和Q
         sim_scores = m.similarity(text1, text2)
         print('sim scores: ', sim_scores)
         for (idx, i), j in zip(enumerate(text1), text2):
@@ -77,3 +77,18 @@ if __name__ == '__main__':
     m = EnsembleSimilarity(similarities=[m1, m2, m3, m4], weights=[0.7, 0.1, 0.1, 0.1], c=2)
     m.load_corpus_embeddings()
     sim_and_search(m)
+# query: 我的花呗开通了？
+# search top 3:
+# 	花呗更改绑定银行卡: 0.3833
+# 	我什么时候开通了花呗: 0.3750
+# 	中央情报局局长访问以色列叙利亚会谈: 0.2750
+# query: 乌克兰被俄罗斯警告
+# search top 3:
+# 	俄罗斯警告乌克兰反对欧盟协议: 0.5000
+# 	我什么时候开通了花呗: 0.2833
+# 	暴风雨掩埋了东北部；新泽西16英寸的降雪: 0.2417
+# query: 更改绑定银行卡
+# search top 3:
+# 	花呗更改绑定银行卡: 0.4167
+# 	中央情报局局长访问以色列叙利亚会谈: 0.3250
+# 	我什么时候开通了花呗: 0.2583

@@ -2,6 +2,7 @@
 """
 @author:XuMing(xuming624@qq.com)
 @description: Use faiss to search clip embeddings
+@2024-3-31-19.48
 """
 import base64
 import json
@@ -29,14 +30,18 @@ def preprocess_image(image_input: Union[str, np.ndarray, bytes]) -> Image.Image:
     Process image input to Image.Image object
     """
     if isinstance(image_input, str):
+        #如果字符串是一个URL（以 'http' 开头），使用 requests 库获取该 URL 的内容，并将其转换为 Image 对象。
         if image_input.startswith('http'):
             return Image.open(requests.get(image_input, stream=True).raw)
+        #如果字符串是一个文件路径（以常见的图像文件扩展名结束，并且文件实际存在），则直接打开该文件为 Image 对象
         elif image_input.endswith((".png", ".jpg", ".jpeg", ".bmp")) and os.path.isfile(image_input):
             return Image.open(image_input)
         else:
             raise ValueError(f"Unsupported image input type, image path: {image_input}")
+    #如果输入是 NumPy 数组，则使用 Image.fromarray 方法将其转换为 Image 对象。
     elif isinstance(image_input, np.ndarray):
         return Image.fromarray(image_input)
+    #如果输入是字节序列，先进行 Base64 解码，然后使用 BytesIO 将字节流转换为可读的文件对象，并用 Image.open 方法打开它。
     elif isinstance(image_input, bytes):
         img_data = base64.b64decode(image_input)
         return Image.open(BytesIO(img_data))
@@ -79,24 +84,28 @@ def clip_embedding(
     :param kwargs: read_csv kwargs
     :return: None, save embeddings to image_embeddings_dir and text_embeddings_dir
     """
+    #确保至少启用了图像或文本处理，两者不能同时为假。
     assert enable_image or enable_text, "enable_image and enable_text should not be both False"
+    #从指定的输入目录中获取所有 .tsv, .csv, .txt 文件
     input_files = [f for f in os.listdir(input_dir) if f.endswith((".tsv", ".csv", ".txt"))]
+   #确保找到了输入文件，如果没有，则断言失败。
     assert len(input_files) > 0, f"input_dir {input_dir} has no tsv/csv/txt files"
     logger.info(f"Start embedding, input files: {input_files}")
     model = ClipModule(model_name_or_path=model_name)
     logger.info(f'Load model success. model: {model_name}')
 
     for i, file in enumerate(input_files):
+        #使用日志记录器打印当前正在处理的文件信息。
         logger.debug(f"Processing file {i + 1}/{len(input_files)}: {file}")
         output_file_counter = 0
         input_path = os.path.join(input_dir, file)
-        # Read the input file in chunks
+        #逐块读取CSV文件。chunksize=chunk_size参数表示每次读取的行数，kwargs包含read_csv函数的其他参数。
         for chunk_df in pd.read_csv(input_path, chunksize=chunk_size, **kwargs):
-            if enable_image:
+            if enable_image: #如果启用了图像处理功能，则执行图像处理代码块。
                 images = chunk_df[image_column_name].tolist()
 
                 images = [preprocess_image(img) for img in images]
-                pool = model.start_multi_process_pool(target_devices=target_devices)
+                pool = model.start_multi_process_pool(target_devices=target_devices) #启动多进程池，以便在指定的设备上并行处理数据。
                 # Compute the embeddings using the multi processes pool
                 image_emb = model.encode_multi_process(
                     images,
@@ -300,7 +309,7 @@ def clip_filter(
         raise ValueError("must fill one of texts, images and embeddings input")
     index_file = os.path.join(index_dir, index_name)
     assert os.path.exists(index_file), f"index file {index_file} not exist"
-    faiss_index = faiss.read_index(index_file)
+    faiss_index = faiss.read_index(index_file) #使用 FAISS 读取索引文件
     model = ClipModule(model_name_or_path=model_name, device=device)
     df = pd.concat(pd.read_parquet(parquet_file) for parquet_file in sorted(Path(corpus_dir).glob("*.parquet")))
     logger.info(f'Load success. model: {model_name}, index: {faiss_index}, corpus size: {len(df)}')

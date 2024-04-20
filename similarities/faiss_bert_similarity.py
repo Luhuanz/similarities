@@ -47,21 +47,22 @@ def bert_embedding(
     :param kwargs: read_csv kwargs, e.g. names=['sentence'], sep='\t'
     :return: None, save embeddings to embeddings_dir
     """
+    #获取输入目录中的所有文本和 CSV 文件，确保至少存在一个文件
     input_files = [f for f in os.listdir(input_dir) if f.endswith((".txt", ".csv"))]
     assert len(input_files) > 0, f"input_dir {input_dir} has no csv/txt files"
     logger.info(f"Start embedding, input files: {input_files}")
-
+    #加载指定名称的句子嵌入模型。
     model = SentenceModel(model_name_or_path=model_name)
     logger.info(f'Load model success. model: {model_name}')
-
+    #遍历输入文件，为每个文件创建一个路径，并初始化计数器用于输出文件名。
     for i, file in enumerate(input_files):
         logger.debug(f"Processing file {i + 1}/{len(input_files)}: {file}")
         output_file_counter = 0
         input_path = os.path.join(input_dir, file)
-        # Read the input file in chunks
+        # Read the input file in chunks 以块的形式读取文件，每块包含 chunk_size 行，从中提取出需要嵌入的文本。
         for chunk_df in pd.read_csv(input_path, chunksize=chunk_size, **kwargs):
             sentences = chunk_df[text_column_name].tolist()
-
+            #在多个进程中计算嵌入，使用指定的设备和批处理大小，并根据需要归一化嵌入。
             pool = model.start_multi_process_pool(target_devices=target_devices)
             # Compute the embeddings using the multi processes pool
             emb = model.encode_multi_process(
@@ -71,12 +72,13 @@ def bert_embedding(
                 normalize_embeddings=normalize_embeddings
             )
             model.stop_multi_process_pool(pool)
+            #确保嵌入目录存在，构建嵌入文件的路径，并将嵌入保存为 NumPy
             os.makedirs(embeddings_dir, exist_ok=True)
             text_embeddings_file = os.path.join(embeddings_dir, f"part-{output_file_counter:05d}.npy")
             np.save(text_embeddings_file, emb)
             logger.debug(f"Embeddings computed. Shape: {emb.shape}, saved to {text_embeddings_file}")
 
-            # Save corpus to Parquet file
+            # Save corpus to Parquet file 确保语料目录存在，构建语料文件的路径，并将当前块的数据保存为 Parquet 文件。
             os.makedirs(corpus_dir, exist_ok=True)
             corpus_file = os.path.join(corpus_dir, f"part-{output_file_counter:05d}.parquet")
             chunk_df.to_parquet(corpus_file, index=False)
@@ -84,7 +86,7 @@ def bert_embedding(
             output_file_counter += 1
     logger.info(f"Embedding done, saved text emb to {embeddings_dir}")
 
-
+#函数用于构建基于提供的文本嵌入的索引，通常是使用 FAISS 库通过 autofaiss 进行操作。 ：
 def bert_index(
         embeddings_dir: str,
         index_dir: str = "bert_engine/text_index/",
@@ -157,6 +159,7 @@ def batch_search_index(
     """
     result = []
     queries = [str(q).strip() for q in queries if str(q).strip()]
+    #处理 queries，确保它们都是字符串，并移除两端的空白字符。
     if not queries:
         return result
 
@@ -168,9 +171,11 @@ def batch_search_index(
             _, D, I = faiss_index.range_search(query_features, threshold)
         else:
             D, I = faiss_index.search(query_features, num_results)
+            #遍历每个查询及其对应的距离 (d) 和索引 (i)，初始化一个用于存储每个查询结果的列表。
         for query, d, i in zip(queries, D, I):
             # Sorted faiss search result with distance
             text_scores = []
+            #遍历每个查询的结果，从 df 中获取对应的文本，记录相似度得分和索引，并将其添加到结果列表中。
             for ed, ei in zip(d, i):
                 sentence = df.iloc[ei].to_json(force_ascii=False)
                 if debug:
@@ -212,11 +217,11 @@ def bert_filter(
 
     index_file = os.path.join(index_dir, index_name)
     assert os.path.exists(index_file), f"index file {index_file} not exist"
-    faiss_index = faiss.read_index(index_file)
+    faiss_index = faiss.read_index(index_file) #将语料库目录下的所有 Parquet 文件合并为一个 DataFrame
     model = SentenceModel(model_name_or_path=model_name, device=device)
     df = pd.concat(pd.read_parquet(parquet_file) for parquet_file in sorted(Path(corpus_dir).glob("*.parquet")))
     logger.info(f'Load success. model: {model_name}, index: {faiss_index}, corpus size: {len(df)}')
-
+    #使用 batch_search_index 函数进行批量搜索，传递上述加载的资源和参数
     result = batch_search_index(queries, model, faiss_index, df, num_results, threshold, debug=debug)
     # Save results
     if output_file:
@@ -242,10 +247,22 @@ def bert_server(
         num_results: int = 10,
         threshold: Optional[float] = None,
         device: Optional[str] = None,
-        host: str = "0.0.0.0",
+        host: str = "127.0.0.1",
         port: int = 8001,
         debug: bool = False,
 ):
+    '''
+    model_name: 用于生成文本嵌入的 BERT 模型名称。
+    index_dir: 存放 FAISS 索引的目录。
+    index_name: FAISS 索引文件的名称。
+    corpus_dir: 存放文本语料库的目录。
+    num_results: 搜索时返回的结果数量。
+    threshold: 搜索结果的相似度阈值。
+    device: PyTorch 设备标识符。
+    host: 服务的主机地址。
+    port: 服务监听的端口。
+    debug: 是否输出调试信息。
+    '''
     """
     Main entry point of bert search backend, start the server
     :param model_name: sentence bert model name
@@ -260,7 +277,7 @@ def bert_server(
     :param debug: whether to print debug info, default False
     :return: None, start the server
     """
-    import uvicorn
+    import uvicorn #与 Flask 框架不同，FastAPI 并不包含任何内置的开发服务器
     from fastapi import FastAPI
     from pydantic import BaseModel, Field
     from starlette.middleware.cors import CORSMiddleware
@@ -273,7 +290,7 @@ def bert_server(
     df = pd.concat(pd.read_parquet(parquet_file) for parquet_file in sorted(Path(corpus_dir).glob("*.parquet")))
     logger.info(f'Load model success. model: {model_name}, index: {faiss_index}, corpus size: {len(df)}')
 
-    # define the app
+    # define the app 创建一个 FastAPI 应用，并添加 CORS 中间件以允许跨域请求。
     app = FastAPI()
     app.add_middleware(
         CORSMiddleware,
@@ -282,14 +299,14 @@ def bert_server(
         allow_methods=["*"],
         allow_headers=["*"])
 
-    class Item(BaseModel):
+    class Item(BaseModel): #使用 Pydantic 定义请求数据模型，其中包含一个文本输入字段
         input: str = Field(..., max_length=512)
 
     @app.get('/')
     async def index():
         return {"message": "index, docs url: /docs"}
 
-    @app.post('/emb')
+    @app.post('/emb') #定义/emb端点的POST请求，用于计算单个文本输入的嵌入
     async def emb(item: Item):
         try:
             q = item.input
@@ -301,7 +318,7 @@ def bert_server(
             logger.error(e)
             return {'status': False, 'msg': e}, 400
 
-    @app.post('/similarity')
+    @app.post('/similarity') #定义/similarity端点的POST请求，计算两个文本输入的相似度。
     async def similarity(item1: Item, item2: Item):
         try:
             q1 = item1.input
@@ -316,7 +333,7 @@ def bert_server(
             logger.error(e)
             return {'status': False, 'msg': e}, 400
 
-    @app.post('/search')
+    @app.post('/search') #定义/search端点的 POST 请求，根据单个文本查询执行搜索，并返回最相关的结果
     async def search(item: Item):
         try:
             q = item.input
@@ -335,7 +352,7 @@ def bert_server(
 
 
 class BertClient:
-    def __init__(self, base_url: str = "http://0.0.0.0:8001", timeout: int = 30):
+    def __init__(self, base_url: str = "http://localhost:6007", timeout: int = 30):
         self.base_url = base_url
         self.timeout = timeout
 

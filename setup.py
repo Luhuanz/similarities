@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = ""
-exec(open('similarities/version.py').read())
+exec(open('similarities/version.py').read()) #exec() 函数则执行这个字符串作为 Python 代码。这意味着 version.py 文件中的所有代码都将被执行
 
 if sys.version_info < (3,):
     sys.exit('Sorry, Python3 is required.')

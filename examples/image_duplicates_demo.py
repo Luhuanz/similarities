@@ -34,8 +34,9 @@ def main():
     model = ClipSimilarity()
     print(model)
     corpus = [Image.open(i) for i in corpus_paths]
-    corpus_embeddings = model.get_embeddings(corpus, show_progress_bar=True, convert_to_tensor=True)
-    duplicates = paraphrase_mining_embeddings(corpus_embeddings)
+    corpus_embeddings = model.get_embeddings(corpus, show_progress_bar=True, convert_to_tensor=True) # 9 512 最后输出的前一层
+
+    duplicates = paraphrase_mining_embeddings(corpus_embeddings) #每对imgs相似度矩阵
 
     for score, idx1, idx2 in duplicates[0:10]:
         print("\nScore: {:.3f}".format(score))

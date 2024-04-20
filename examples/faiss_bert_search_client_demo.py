@@ -2,6 +2,7 @@
 """
 @author:XuMing(xuming624@qq.com)
 @description: Use Faiss for text similarity search demo
+@2024-03-31 17
 """
 
 import sys
@@ -12,7 +13,7 @@ from similarities import BertClient
 
 def main():
     # Client
-    client = BertClient('http://0.0.0.0:8001')
+    client = BertClient('http://localhost:6006')
 
     # 获取嵌入
     text_input = "This is a sample text."

@@ -254,15 +254,15 @@ class TfidfSimilarity(SimilarityABC):
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
-            corpus = list(set(corpus))
+            corpus = list(set(corpus)) #如果 corpus 是列表，则去重
             for id, doc in enumerate(corpus):
-                if doc not in list(self.corpus.values()):
+                if doc not in list(self.corpus.values()): #将不在当前语料库中的文档添加到 corpus_new
                     corpus_new[start_id + id] = doc
         else:
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
-        self.corpus.update(corpus_new)
+        self.corpus.update(corpus_new) #将新文档添加到 self.corpus
 
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_texts = list(corpus_new.values())
@@ -310,7 +310,7 @@ class TfidfSimilarity(SimilarityABC):
 
         queries_embeddings = np.array([self.tfidf.get_tfidf(query) for query in queries_texts], dtype=np.float32)
         corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
-        all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn)
+        all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn) #使用语义搜索找到与查询最相似的文档。
         for idx, hits in enumerate(all_hits):
             for hit in hits[0:topn]:
                 result[queries_ids_map[idx]][hit['corpus_id']] = hit['score']
@@ -319,10 +319,11 @@ class TfidfSimilarity(SimilarityABC):
 
     def save_corpus_embeddings(self, emb_path: str = "tfidf_corpus_emb.jsonl"):
         """
-        Save corpus embeddings to jsonl file.
+        Save corpus embeddings to jsonl file. 将语料库嵌入保存到 JSONL 文件中
         :param emb_path: jsonl file path
         :return:
         """
+        #遍历语料库，将每个文档的 ID、内容和嵌入保存到文件中，
         with open(emb_path, "w", encoding="utf-8") as f:
             for id, emb in zip(self.corpus.keys(), self.corpus_embeddings):
                 json_obj = {"id": id, "doc": self.corpus[id], "doc_emb": list(emb)}
@@ -331,7 +332,8 @@ class TfidfSimilarity(SimilarityABC):
 
     def load_corpus_embeddings(self, emb_path: str = "tfidf_corpus_emb.jsonl"):
         """
-        Load corpus embeddings from jsonl file.
+        Load corpus embeddings from jsonl file. #这个类通过 TF-IDF 方法计算文本之间的相似度，支持动态添加新文档到语料库，
+        并能够保存和加载文档嵌入，以便于相似度查询和文档管理。
         :param emb_path: jsonl file path
         :return:
         """
@@ -397,10 +399,15 @@ class BM25Similarity(SimilarityABC):
 
     def build_bm25(self):
         """build bm25 model."""
-        corpus_texts = list(self.corpus.values())
+        corpus_texts = list(self.corpus.values())#将 self.corpus 中的文档内容提取出来，形成一个文档列表 corpus_texts
+        # 使用 jieba.lcut 对每个文档进行分词，得到分词后的文档列表 corpus_seg。jieba.lcut 返回的是文档的分词列表。
         corpus_seg = [jieba.lcut(d) for d in corpus_texts]
+       #移除停用词和空白词。# 这里，w.strip().lower()
+        # 将词条 w 去掉两端空格并转换为小写，然后检查这个词条是否不在停用词列表 self.default_stopwords 中，并且这个词条的长度大于 0。
+        # 满足这些条件的词条会被保留。
         corpus_seg = [[w for w in doc if (w.strip().lower() not in self.default_stopwords) and
                        len(w.strip()) > 0] for doc in corpus_seg]
+ #用处理后的文档列表 corpus_seg 来创建一个 BM25Okapi 对象，并将其赋值给 self.bm25。BM25Okapi 是 BM25 的一种变体，用于计算文档的 BM25 分数。
         self.bm25 = BM25Okapi(corpus_seg)
         logger.info(f"Total corpus: {len(self.corpus)}")
 
@@ -569,10 +576,14 @@ class WordEmbeddingSimilarity(SimilarityABC):
 
 
 class CilinSimilarity(SimilarityABC):
+    #cilin 用于计算基于《同义词词林》的词语相似度
     """
     Compute Cilin similarity between two sentences and retrieves most
     similar sentence for a given corpus.
     """
+#找词语的类别路径：在《同义词词林》中，每个词语都属于一个具体的类别，这些类别按层次组织。每个类别都有一个唯一的代码，这个代码表示了从最顶层类别到当前类别的路径。
+
+#计算路径的相似度：两个词语的相似度可以通过比较它们类别路径的共同部分来确定。路径越长且共同部分越多，相似度越高。
     default_cilin_path = os.path.join(pwd_path, 'data/cilin.txt')
 
     def __init__(self, corpus: Union[List[str], Dict[int, str]] = None, cilin_path: str = default_cilin_path):
@@ -616,7 +627,8 @@ class CilinSimilarity(SimilarityABC):
 
         logger.info(f"Start add new docs: {len(corpus_new)}")
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
-
+#定义了一个静态方法 load_cilin_dict，用于加载《同义词词林》的词典数据
+    #  在调用静态方法时，不需要传递 self 参数，因为它不涉及访问实例属性或实例方法。
     @staticmethod
     def load_cilin_dict(path):
         """加载词林语义词典"""

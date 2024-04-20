@@ -8,6 +8,10 @@ when encoding large image collections.
 
 This basic example loads a pre-trained model from the web and uses it to
 generate embeddings for a given list of sentences.
+
+
+
+2024-3-30 23.42
 """
 import sys
 
@@ -26,13 +30,13 @@ def main():
 
     # Start the multi processes pool on all available CUDA devices
     # target_devices = ['cuda:0', 'cuda:1', 'cuda:2', 'cuda:3']
-    pool = model.start_multi_process_pool(target_devices=None)
+    pool = model.start_multi_process_pool(target_devices=None) # 线程池模拟多设备 encode_p00l
 
     # Compute the embeddings using the multi processes pool
     emb = model.encode_multi_process(sentences, pool, normalize_embeddings=True)
     print(f"Embeddings computed. Shape: {emb.shape}")
 
-    # Optional: Stop the process in the pool
+    # Optional: Stop the process in the pool embedding
     model.stop_multi_process_pool(pool)
 
     # 2. Compute embeddings for images
@@ -41,7 +45,7 @@ def main():
     imgs = [Image.open(i) for i in image_paths]
     pool = model.start_multi_process_pool(target_devices=None)
     emb = model.encode_multi_process(imgs, pool, normalize_embeddings=True)
-    print(f"Embeddings computed. Shape: {emb.shape}")
+    print(f"Embeddings computed. Shape: {emb.shape}") #Embeddings computed. Shape: (100, 512)
     model.stop_multi_process_pool(pool)
 
 

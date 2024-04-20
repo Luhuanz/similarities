@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 refer: https://github.com/UKPLab/beir/blob/main/beir/datasets/data_loader.py
+score
 """
 from typing import List, Dict, Tuple
 

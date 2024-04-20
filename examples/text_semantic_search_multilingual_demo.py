@@ -2,7 +2,7 @@
 """
 @author:XuMing(xuming624@qq.com)
 @description: This basic example loads a matching model and use it to
-compute cosine similarity for a given list of sentences.
+compute cosine similarity for a given list of sentences.多gpu
 """
 import sys
 

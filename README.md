@@ -8,7 +8,10 @@
 
 -----------------
 
-# Similarities: Similarity Calculation and Semantic Search
+# Similarities: Similarity Calculation and Semantic Search 注释版 
+
+### 8.2h
+
 [![PyPI version](https://badge.fury.io/py/similarities.svg)](https://badge.fury.io/py/similarities)
 [![Downloads](https://static.pepy.tech/badge/similarities)](https://pepy.tech/project/similarities)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
@@ -16,7 +19,6 @@
 [![python_version](https://img.shields.io/badge/Python-3.5%2B-green.svg)](requirements.txt)
 [![GitHub issues](https://img.shields.io/github/issues/shibing624/similarities.svg)](https://github.com/shibing624/similarities/issues)
 [![Wechat Group](https://img.shields.io/badge/wechat-group-green.svg?logo=wechat)](#Contact)
-
 
 **similarities**: a toolkit for similarity calculation and semantic search, supports text and image. 相似度计算、语义匹配搜索工具包。
 

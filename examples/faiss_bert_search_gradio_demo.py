@@ -2,6 +2,7 @@
 """
 @author:XuMing(xuming624@qq.com)
 @description:
+@2024-18-31-18.59
 """
 
 import argparse
@@ -16,8 +17,8 @@ from similarities import BertClient
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--base_url', default="http://0.0.0.0:8001", type=str, help='Base url of clip server')
-    parser.add_argument('--port', default=8081, type=int, help='Port of gradio demo')
+    parser.add_argument('--base_url', default="http://localhost:6006", type=str, help='Base url of clip server')
+    parser.add_argument('--port', default=6006, type=int, help='Port of gradio demo')
     args = parser.parse_args()
     print(args)
     client = BertClient(args.base_url)
@@ -53,7 +54,7 @@ def main():
         description="Copy or input Chinese text here. Submit and the machine will find the most similarity texts.",
         article="Link to <a href='https://github.com/shibing624/similarities' style='color:blue;' target='_blank\'>Github REPO</a>",
         examples=examples
-    ).launch(server_name='0.0.0.0', server_port=args.port)
+    ).launch(server_name='localhost', server_port=args.port)
 
 
 if __name__ == '__main__':

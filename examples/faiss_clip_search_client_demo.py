@@ -14,7 +14,7 @@ from similarities import ClipClient, ClipItem
 
 def main():
     # Client
-    client = ClipClient('http://0.0.0.0:8002')
+    client = ClipClient('http://127.0.0.1:6006')
 
     # 获取嵌入，支持获取文本嵌入、图片嵌入
     text_input = "This is a sample text."

@@ -5,6 +5,7 @@
 
 refer: https://colab.research.google.com/drive/1leOzG-AQw5MkzgA4qNW5fb3yc-oJ4Lo4
 Adjust the code to compare similarity score and search.
+@ 2024-03-31-20.30
 """
 
 from typing import List, Union, Dict

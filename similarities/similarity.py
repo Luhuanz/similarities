@@ -6,6 +6,7 @@
 Compute similarity:
 1. Compute the similarity between two sentences
 2. Retrieves most similar sentence of a query against a corpus of documents.
+@2024-03-30 20
 """
 
 from typing import List, Union, Dict

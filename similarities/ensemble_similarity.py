@@ -19,6 +19,7 @@ pwd_path = os.path.abspath(os.path.dirname(__file__))
 
 
 class EnsembleSimilarity(SimilarityABC):
+    #EnsembleSimilarity 的具体实现可以根据不同的应用场景和需求有所变化，但基本思想是将多个相似度度量的结果合并为一个最终的相似度得分
     """
     Compute similarity score between two sentences and retrieves most
     similar sentence for a given corpus.
@@ -88,15 +89,15 @@ class EnsembleSimilarity(SimilarityABC):
             a = [a]
         if isinstance(b, str):
             b = [b]
-
+#检查 a 和 b 是否具有相同的长度，如果不相同，则抛出异常。这是因为要逐一比较 a 和 b 中相应位置的文本。
         if len(a) != len(b):
             raise ValueError("expected two inputs of the same length")
 
         similarity_scores = [0] * len(a)
-
+        #遍历每个相似度计算方法及其权重
         # Calculate similarity score for each pair and similarity method
         for m, weight in zip(self.similarities, self.weights):
-            if hasattr(m, "similarity"):
+            if hasattr(m, "similarity"): #检查相似度计算方法 m 是否有 similarity 方法。
                 # Compute similarities in batch
                 batch_similarity_scores = m.similarity(a, b)
                 scores = []
@@ -105,7 +106,7 @@ class EnsembleSimilarity(SimilarityABC):
                         scores.append(batch_similarity_scores.numpy()[i][i])
                 else:
                     scores = batch_similarity_scores
-                # Add weighted batch similarity scores to total similarity_scores
+          #将加权的批量相似度得分累加到总的相似度得分上。这里使用每个方法的权重 weight 对每个相似度得分进行加权，然后加到总分上。
                 similarity_scores = [s + weight * batch_s for s, batch_s in
                                      zip(similarity_scores, scores)]
 

@@ -42,7 +42,7 @@ if __name__ == '__main__':
     output_text = gr.outputs.Textbox()
     gr.Interface(
         ai_text,
-        inputs=[input],
+        inputs=input,
         outputs=[output_text],
         # theme="grass",
         title="Chinese Text Semantic Search Model",

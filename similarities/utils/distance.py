@@ -3,7 +3,7 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
-from difflib import SequenceMatcher
+from difflib import SequenceMatcher #用于比较任何类型的序列，以找出它们之间的相似度。这个类可以用来比较字符串、列表或任何类序列类型。
 
 import numpy as np
 from similarities.utils.util import cos_sim

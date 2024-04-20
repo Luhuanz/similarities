@@ -12,7 +12,7 @@ import torch
 import torch.multiprocessing as mp
 import torch.nn.functional
 from PIL import Image
-from loguru import logger
+from loguru import logger #Loguru 是一个功能丰富且易于使用的日志记录
 from torch import nn
 from tqdm import trange
 from transformers import ChineseCLIPProcessor, ChineseCLIPModel, CLIPProcessor, CLIPModel
@@ -54,7 +54,7 @@ class ClipModule(nn.Module):
             self.processor = ChineseCLIPProcessor.from_pretrained(processor_name)
         else:
             self.model = CLIPModel.from_pretrained(model_name_or_path)
-            self.processor = CLIPProcessor.from_pretrained(processor_name)
+            self.processor = CLIPProcessor.from_pretrained(processor_name) # 对数据进行预处理
         logger.debug(f"Device: {self.device}")
         self.model.to(self.device)
 
@@ -62,20 +62,22 @@ class ClipModule(nn.Module):
         return f"model_name_or_path: {self.model_name_or_path} ClipModule({self.model})"
 
     def forward(self, features):
+
         image_embeds = []
         text_embeds = []
 
-        if 'pixel_values' in features:
-            vision_outputs = self.model.vision_model(pixel_values=features['pixel_values'])
-            image_embeds = self.model.visual_projection(vision_outputs[1])
+        if 'pixel_values' in features:  #这pixel_values种预处理可能包括归一化、调整大小等，使得图像数据符合模型的输入要求。
+            vision_outputs = self.model.vision_model(pixel_values=features['pixel_values'])#[3,768]
+            image_embeds = self.model.visual_projection(vision_outputs[1]) #[3,512]
+            #通常是最后一层的输出或特定的中间层输出）传递给 self.model.visual_projection。visual_projection 这部分通常是一个线性层或其他形式的投影层，用于将模型的视觉输出转换为更紧凑或特定维度的嵌入表示（image_embeds）
 
-        if 'input_ids' in features:
+        if 'input_ids' in features: #处理文本输入并提取特征,说明有文本数据需要处理。'input_ids' 是经过编码的文本数据，通常是一个整数数组，每个整数代表词汇表中的一个单词或标记。
             text_outputs = self.model.text_model(
                 input_ids=features.get('input_ids'),
-                attention_mask=features.get('attention_mask', None),
+                attention_mask=features.get('attention_mask', None), #指定哪些部分是真实文本，哪些部分是填充的。这可以帮助模型区分真实数据和填充数据。
                 position_ids=features.get('position_ids', None),
                 output_attentions=features.get('output_attentions', None),
-                output_hidden_states=features.get('output_hidden_states', None),
+                output_hidden_states=features.get('output_hidden_states', None),#根据需要返回模型的注意力和隐藏状态。这个调用返回 text_outputs，它包含了文本处理的结果。
             )
             if self.is_chinese_model:
                 # refer chinese clip: https://github.com/huggingface/transformers/blob/main/src/transformers/models/chinese_clip/modeling_chinese_clip.py#L1431
@@ -115,7 +117,7 @@ class ClipModule(nn.Module):
             texts_values = None
         if len(images) == 0:
             images = None
-
+#images=[<PIL.PngImagePlugin.PngImageFile image mode=RGBA size=282x288 at 0x7FE91D2BA430>, <PIL.PngImagePlugin.PngImageFile image mode=RGBA size=333x249 at 0x7FE91D2BA490>, <PIL.PngImagePlugin.PngImageFile image mode=RGBA size=746x520 at 0x7FE91CB342E0>]
         inputs = self.processor(text=texts_values, images=images, return_tensors="pt", padding=True)
         inputs['image_text_info'] = image_text_info
         return inputs
@@ -184,14 +186,14 @@ class ClipModule(nn.Module):
             device = self.device
         self.model.eval()
         input_was_string = False
-        if isinstance(sentences, str) or not hasattr(sentences, '__len__'):
+        if isinstance(sentences, str) or not hasattr(sentences, '__len__'): #这行代码检查 sentences 是否为字符串或者是否没有 __len__ 属性（
             sentences = [sentences]
             input_was_string = True
         self.model.to(device)
         if convert_to_tensor:
             convert_to_numpy = False
         all_embeddings = []
-        length_sorted_idx = np.argsort([-self._text_length(sent) for sent in sentences])
+        length_sorted_idx = np.argsort([-self._text_length(sent) for sent in sentences])#计算了 sentences 中每个句子的长度，并根据长度对句子进行排序
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
 
         for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):
@@ -202,7 +204,7 @@ class ClipModule(nn.Module):
             with torch.no_grad():
                 out_features = self.forward(features)
                 embeddings = out_features['embedding']
-                embeddings = embeddings.detach()
+                embeddings = embeddings.detach() #用来从当前计算图中分离出 embeddings 张量 detach() 方法会创建一个新的张量，它与原始张量共享数据但不会记录梯度
                 if normalize_embeddings:
                     embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
                 # fixes for #522 and #487 to avoid oom problems on gpu with large datasets
@@ -238,7 +240,7 @@ class ClipModule(nn.Module):
                 target_devices = ['cpu'] * 4
 
         logger.info("Start multi-process pool on devices: {}".format(', '.join(map(str, target_devices))))
-
+#模拟多台设备这里使用 'spawn' 方式来启动进程。不同的操作系统支持不同的进程启动方式，'spawn' 是跨平台的，意味着它在 Windows、macOS 和 Unix 上都可用
         ctx = mp.get_context('spawn')
         input_queue = ctx.Queue()
         output_queue = ctx.Queue()
@@ -246,7 +248,7 @@ class ClipModule(nn.Module):
 
         for cuda_id in target_devices:
             p = ctx.Process(
-                target=ClipModule._encode_multi_process_worker,
+                target=ClipModule._encode_multi_process_worker, # encodeing
                 args=(cuda_id, self, input_queue, output_queue),
                 daemon=True
             )
@@ -278,6 +280,7 @@ class ClipModule(nn.Module):
             normalize_embeddings: bool = False,
             chunk_size: int = None
     ):
+        # 在多个 GPU 上并行地编码大量句子或图像。
         """
         This method allows to run encode() on multiple GPUs. The sentences are chunked into smaller packages
         and sent to individual processes, which encode these on the different GPUs. This method is only suitable
@@ -290,16 +293,16 @@ class ClipModule(nn.Module):
         :param chunk_size: Sentences are chunked and sent to the individual processes. If none, it is a sensible size.
         :return: Numpy matrix with all embeddings
         """
-
+#没有指定 chunk_size（每个数据块的大小），则自动计算一个合理的值。它试图将句子均匀分配到各个进程，但每个块的大小不超过 5000
         if chunk_size is None:
             chunk_size = min(math.ceil(len(sentences) / len(pool["processes"]) / 10), 5000)
 
         logger.debug(f"Chunk data into {math.ceil(len(sentences) / chunk_size)} packages of size {chunk_size}")
-
+      #  获取进程池中用于输入的队列
         input_queue = pool['input']
         last_chunk_id = 0
         chunk = []
-
+#初始化 last_chunk_id 来跟踪当前的块编号，初始化 chunk 列表来收集每个数据块的
         for sentence in sentences:
             chunk.append(sentence)
             if len(chunk) >= chunk_size:
